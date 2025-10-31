@@ -4,17 +4,13 @@ from torch.utils.data import DataLoader
 from collections import Counter
 import numpy as np
 
-# Gerekli diğer dosyalardan importlar
 from main import MiniYolo
 from dataset import SyntheticDataset
 from datasetprepare import create_synthetic_dataset
 
-# --------------------------------------------------------------------------
-# mAP HESAPLAMA FONKSİYONLARI
-# --------------------------------------------------------------------------
 
 def intersection_over_union(kutular_preds, kutular_labels):
-    # Köşe koordinatlarını hesapla
+    
     kutu1_x1 = kutular_preds[..., 0:1] - kutular_preds[..., 2:3] / 2
     kutu1_y1 = kutular_preds[..., 1:2] - kutular_preds[..., 3:4] / 2
     kutu1_x2 = kutular_preds[..., 0:1] + kutular_preds[..., 2:3] / 2
@@ -25,7 +21,7 @@ def intersection_over_union(kutular_preds, kutular_labels):
     kutu2_x2 = kutular_labels[..., 0:1] + kutular_labels[..., 2:3] / 2
     kutu2_y2 = kutular_labels[..., 1:2] + kutular_labels[..., 3:4] / 2
     
-    # Kesişim alanını bul
+    
     x1 = torch.max(kutu1_x1, kutu2_x1)
     y1 = torch.max(kutu1_y1, kutu2_y1)
     x2 = torch.min(kutu1_x2, kutu2_x2)
@@ -33,7 +29,7 @@ def intersection_over_union(kutular_preds, kutular_labels):
     
     intersection = (x2 - x1).clamp(0) * (y2 - y1).clamp(0)
     
-    # Birleşim alanını bul
+    
     kutu1_area = abs((kutu1_x2 - kutu1_x1) * (kutu1_y2 - kutu1_y1))
     kutu2_area = abs((kutu2_x2 - kutu2_x1) * (kutu2_y2 - kutu2_y1))
     union = kutu1_area + kutu2_area - intersection + 1e-6
@@ -49,16 +45,16 @@ def mean_average_precision(pred_kutular, true_kutular, iou_threshold=0.5, num_cl
         detections = [kutu for kutu in pred_kutular if kutu[1] == c]
         ground_truths = [kutu for kutu in true_kutular if kutu[1] == c]
         
-        amount_bkutular = Counter(gt[0] for gt in ground_truths)
-        for key, val in amount_bkutular.items():
-            amount_bkutular[key] = torch.zeros(val)
+        amount_kkutular = Counter(gt[0] for gt in ground_truths)
+        for key, val in amount_kkutular.items():
+            amount_kkutular[key] = torch.zeros(val)
         
         detections.sort(key=lambda x: x[2], reverse=True)
         TP = torch.zeros(len(detections))
         FP = torch.zeros(len(detections))
-        total_true_bkutular = len(ground_truths)
+        total_true_kkutular = len(ground_truths)
         
-        if total_true_bkutular == 0:
+        if total_true_kkutular == 0:
             continue
 
         for detection_idx, detection in enumerate(detections):
@@ -77,9 +73,9 @@ def mean_average_precision(pred_kutular, true_kutular, iou_threshold=0.5, num_cl
                     best_gt_idx = idx
             
             if best_iou > iou_threshold:
-                if amount_bkutular[detection[0]][best_gt_idx] == 0:
+                if amount_kkutular[detection[0]][best_gt_idx] == 0:
                     TP[detection_idx] = 1
-                    amount_bkutular[detection[0]][best_gt_idx] = 1
+                    amount_kkutular[detection[0]][best_gt_idx] = 1
                     true_positives_iou_list.append(best_iou)
                 else:
                     FP[detection_idx] = 1
@@ -88,7 +84,7 @@ def mean_average_precision(pred_kutular, true_kutular, iou_threshold=0.5, num_cl
             
         TP_cumsum = torch.cumsum(TP, dim=0)
         FP_cumsum = torch.cumsum(FP, dim=0)
-        recalls = TP_cumsum / (total_true_bkutular + epsilon)
+        recalls = TP_cumsum / (total_true_kkutular + epsilon)
         precisions = torch.div(TP_cumsum, (TP_cumsum + FP_cumsum + epsilon))
         precisions = torch.cat((torch.tensor([1]), precisions))
         recalls = torch.cat((torch.tensor([0]), recalls))
@@ -97,18 +93,10 @@ def mean_average_precision(pred_kutular, true_kutular, iou_threshold=0.5, num_cl
     final_ap = sum(ap for ap in average_precisions) / (len(average_precisions) + epsilon)
     return final_ap, true_positives_iou_list
 
-# --------------------------------------------------------------------------
-# ANA DEĞERLENDİRME KODU
-# --------------------------------------------------------------------------
+
 
 if __name__ == '__main__':
-    # Colab (veya herhangi bir NVIDIA GPU'lu sistem) için doğru cihaz belirleme
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    if torch.cuda.is_available():
-        print(f"CUDA (NVIDIA GPU) kullanılıyor. Cihaz: {torch.cuda.get_device_name(0)}")
-    else:
-        print("CPU kullanılıyor.")
     
     MODEL_PATH = "miniyolo.pth"
     S = 7
@@ -116,19 +104,20 @@ if __name__ == '__main__':
     IOU_THRESHOLD = 0.5
     CONFIDENCE_THRESHOLD = 0.4
 
-    # Test veri seti oluştur
+    
     create_synthetic_dataset(output_dir="test_dataset", num_images=20)
     
-    # Model yükle
+    
     model = MiniYolo(S=S, C=C).to(device)
     model.load_state_dict(torch.load(MODEL_PATH))
     model.eval()
 
-    # Veri setini hazırla
+    
     transform = transforms.Compose([
         transforms.Resize((448, 448)), 
         transforms.ToTensor()
     ])
+    
     test_dataset = SyntheticDataset(
         resim_adresi="test_dataset/images", 
         label_dir="test_dataset/labels", 
@@ -160,12 +149,12 @@ if __name__ == '__main__':
                             (j + x) / S, (i + y) / S, w, h
                         ])
             
-            # Tahminleri normalize et - DÜZELTİLDİ: w,h için de sigmoid eklendi
-            tahminler[..., 0:2] = torch.sigmoid(tahminler[..., 0:2])  # x, y
-            tahminler[..., 2:4] = torch.sigmoid(tahminler[..., 2:4])  # w, h - YENİ
-            tahminler[..., 4:] = torch.sigmoid(tahminler[..., 4:])    # güven, sınıf
             
-            # Tahmin edilen kutuları topla
+            tahminler[..., 0:2] = torch.sigmoid(tahminler[..., 0:2]) 
+            tahminler[..., 2:4] = torch.sigmoid(tahminler[..., 2:4]) 
+            tahminler[..., 4:] = torch.sigmoid(tahminler[..., 4:])    
+            
+            
             for i in range(S):
                 for j in range(S):
                     confidence = tahminler[0, i, j, 4].item()
@@ -181,7 +170,7 @@ if __name__ == '__main__':
             
             img_idx += 1
 
-    # mAP hesapla
+    
     ap, tp_ious = mean_average_precision(
         all_pred_kutular, 
         all_true_kutular, 
