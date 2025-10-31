@@ -71,12 +71,11 @@ print("\nEğitim tamamlandı!")
 torch.save(model.state_dict(), "miniyolo.pth")
 print("Model 'miniyolo.pth' olarak kaydedildi.")
 
-# Hızlı test (Burada augmentasyon uygulanmamış haliyle test etmek daha mantıklı olabilir
-# ancak şimdilik eğitim setinden bir örnekle hızlıca bakıyoruz)
+
 print("\n--- Hızlı Test ---")
 model.eval()
 with torch.no_grad():
-    # Eğitim setinden ilk resmi al (bu resim augmentasyonsuz yüklenecek)
+    # Eğitim setinden ilk resmi al 
     test_dataset_no_aug = SyntheticDataset(
         resim_adresi="dataset/images", 
         label_dir="dataset/labels", 
@@ -94,6 +93,6 @@ with torch.no_grad():
     max_conf = confidence_map.max().item()
     print(f"Maksimum confidence: {max_conf:.4f}")
     if max_conf > 0.5:
-        print("✅ Model çalışıyor gibi görünüyor!")
+        print("Yeterli")
     else:
-        print("❌ Model hala öğrenemedi, daha fazla epoch gerekli!")
+        print("Yetersiz")
