@@ -54,7 +54,7 @@ class SyntheticDataset(Dataset):
             # Hücre içi koordinatları bul
             x_cell, y_cell = self.S * x - j, self.S * y - i
             
-            # Hücre boşsa bilgforward yaz
+            # Hücre boşsa bilgileri yaz
             if label_matrix[i, j, 4] == 0:
                 # Confidence'i 1 yap
                 label_matrix[i, j, 4] = 1
