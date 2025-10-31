@@ -13,17 +13,17 @@ from datasetprepare import create_synthetic_dataset
 # mAP HESAPLAMA FONKSİYONLARI
 # --------------------------------------------------------------------------
 
-def intersection_over_union(kutues_preds, kutues_labels):
+def intersection_over_union(kutular_preds, kutular_labels):
     # Köşe koordinatlarını hesapla
-    kutu1_x1 = kutues_preds[..., 0:1] - kutues_preds[..., 2:3] / 2
-    kutu1_y1 = kutues_preds[..., 1:2] - kutues_preds[..., 3:4] / 2
-    kutu1_x2 = kutues_preds[..., 0:1] + kutues_preds[..., 2:3] / 2
-    kutu1_y2 = kutues_preds[..., 1:2] + kutues_preds[..., 3:4] / 2
+    kutu1_x1 = kutular_preds[..., 0:1] - kutular_preds[..., 2:3] / 2
+    kutu1_y1 = kutular_preds[..., 1:2] - kutular_preds[..., 3:4] / 2
+    kutu1_x2 = kutular_preds[..., 0:1] + kutular_preds[..., 2:3] / 2
+    kutu1_y2 = kutular_preds[..., 1:2] + kutular_preds[..., 3:4] / 2
     
-    kutu2_x1 = kutues_labels[..., 0:1] - kutues_labels[..., 2:3] / 2
-    kutu2_y1 = kutues_labels[..., 1:2] - kutues_labels[..., 3:4] / 2
-    kutu2_x2 = kutues_labels[..., 0:1] + kutues_labels[..., 2:3] / 2
-    kutu2_y2 = kutues_labels[..., 1:2] + kutues_labels[..., 3:4] / 2
+    kutu2_x1 = kutular_labels[..., 0:1] - kutular_labels[..., 2:3] / 2
+    kutu2_y1 = kutular_labels[..., 1:2] - kutular_labels[..., 3:4] / 2
+    kutu2_x2 = kutular_labels[..., 0:1] + kutular_labels[..., 2:3] / 2
+    kutu2_y2 = kutular_labels[..., 1:2] + kutular_labels[..., 3:4] / 2
     
     # Kesişim alanını bul
     x1 = torch.max(kutu1_x1, kutu2_x1)
@@ -40,25 +40,25 @@ def intersection_over_union(kutues_preds, kutues_labels):
     
     return intersection / union
 
-def mean_average_precision(pred_kutues, true_kutues, iou_threshold=0.5, num_classes=1):
+def mean_average_precision(pred_kutular, true_kutular, iou_threshold=0.5, num_classes=1):
     average_precisions = []
     epsilon = 1e-6
     true_positives_iou_list = []
 
     for c in range(num_classes):
-        detections = [kutu for kutu in pred_kutues if kutu[1] == c]
-        ground_truths = [kutu for kutu in true_kutues if kutu[1] == c]
+        detections = [kutu for kutu in pred_kutular if kutu[1] == c]
+        ground_truths = [kutu for kutu in true_kutular if kutu[1] == c]
         
-        amount_bkutues = Counter(gt[0] for gt in ground_truths)
-        for key, val in amount_bkutues.items():
-            amount_bkutues[key] = torch.zeros(val)
+        amount_bkutular = Counter(gt[0] for gt in ground_truths)
+        for key, val in amount_bkutular.items():
+            amount_bkutular[key] = torch.zeros(val)
         
         detections.sort(key=lambda x: x[2], reverse=True)
         TP = torch.zeros(len(detections))
         FP = torch.zeros(len(detections))
-        total_true_bkutues = len(ground_truths)
+        total_true_bkutular = len(ground_truths)
         
-        if total_true_bkutues == 0:
+        if total_true_bkutular == 0:
             continue
 
         for detection_idx, detection in enumerate(detections):
@@ -77,9 +77,9 @@ def mean_average_precision(pred_kutues, true_kutues, iou_threshold=0.5, num_clas
                     best_gt_idx = idx
             
             if best_iou > iou_threshold:
-                if amount_bkutues[detection[0]][best_gt_idx] == 0:
+                if amount_bkutular[detection[0]][best_gt_idx] == 0:
                     TP[detection_idx] = 1
-                    amount_bkutues[detection[0]][best_gt_idx] = 1
+                    amount_bkutular[detection[0]][best_gt_idx] = 1
                     true_positives_iou_list.append(best_iou)
                 else:
                     FP[detection_idx] = 1
@@ -88,7 +88,7 @@ def mean_average_precision(pred_kutues, true_kutues, iou_threshold=0.5, num_clas
             
         TP_cumsum = torch.cumsum(TP, dim=0)
         FP_cumsum = torch.cumsum(FP, dim=0)
-        recalls = TP_cumsum / (total_true_bkutues + epsilon)
+        recalls = TP_cumsum / (total_true_bkutular + epsilon)
         precisions = torch.div(TP_cumsum, (TP_cumsum + FP_cumsum + epsilon))
         precisions = torch.cat((torch.tensor([1]), precisions))
         recalls = torch.cat((torch.tensor([0]), recalls))
@@ -138,8 +138,8 @@ if __name__ == '__main__':
     )
     test_loader = DataLoader(dataset=test_dataset, batch_size=1, shuffle=False)
     
-    all_pred_kutues = []
-    all_true_kutues = []
+    all_pred_kutular = []
+    all_true_kutular = []
     img_idx = 0
 
     with torch.no_grad():
@@ -155,7 +155,7 @@ if __name__ == '__main__':
                         y = labels[0, i, j, 1].item()
                         w = labels[0, i, j, 2].item()
                         h = labels[0, i, j, 3].item()
-                        all_true_kutues.append([
+                        all_true_kutular.append([
                             img_idx, 0, 1.0, 
                             (j + x) / S, (i + y) / S, w, h
                         ])
@@ -174,7 +174,7 @@ if __name__ == '__main__':
                         y = tahminler[0, i, j, 1].item()
                         w = tahminler[0, i, j, 2].item()
                         h = tahminler[0, i, j, 3].item()
-                        all_pred_kutues.append([
+                        all_pred_kutular.append([
                             img_idx, 0, confidence, 
                             (j + x) / S, (i + y) / S, abs(w), abs(h)
                         ])
@@ -183,8 +183,8 @@ if __name__ == '__main__':
 
     # mAP hesapla
     ap, tp_ious = mean_average_precision(
-        all_pred_kutues, 
-        all_true_kutues, 
+        all_pred_kutular, 
+        all_true_kutular, 
         iou_threshold=IOU_THRESHOLD
     )
     avg_iou_of_tps = np.mean(tp_ious) if len(tp_ious) > 0 else 0.0
@@ -193,8 +193,8 @@ if __name__ == '__main__':
     print("--- Değerlendirme Sonuçları ---")
     print("="*50)
     print(f"Toplam Test Görüntüsü              : {img_idx}")
-    print(f"Toplam Gerçek Kutu                 : {len(all_true_kutues)}")
-    print(f"Toplam Tahmin Edilen Kutu          : {len(all_pred_kutues)}")
+    print(f"Toplam Gerçek Kutu                 : {len(all_true_kutular)}")
+    print(f"Toplam Tahmin Edilen Kutu          : {len(all_pred_kutular)}")
     print(f"Average Precision (AP) @{IOU_THRESHOLD} IoU  : {ap.item():.6f}")
     print(f"Doğru Tahminlerin Ortalama IoU     : {avg_iou_of_tps:.6f}")
     print("="*50)
