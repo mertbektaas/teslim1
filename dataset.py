@@ -28,14 +28,14 @@ class SyntheticDataset(Dataset):
         image = Image.open(img_path).convert("RGB")
         
         # Etiketleri oku
-        kutues = []
+        kutular = []
         with open(label_path) as f:
             for label in f.readlines():
                 # .strip() ekleyerek satır sonu karakterlerinden kurtuluyoruz
                 sinif_label, x, y, width, height = [
                     float(val) for val in label.strip().split()
                 ]
-                kutues.append([sinif_label, x, y, width, height])
+                kutular.append([sinif_label, x, y, width, height])
 
         # Görüntüye transform uygula
         if self.transform:
@@ -44,7 +44,7 @@ class SyntheticDataset(Dataset):
         # Hedef tensörü oluştur
         label_matrix = torch.zeros((self.S, self.S, self.C + 5)) # 5: x, y, w, h, confidence ve class
 
-        for kutu in kutues:
+        for kutu in kutular:
             sinif_label, x, y, width, height = kutu # unpack et
             sinif_label = int(sinif_label) # sınıf etiketini integer yap
             
