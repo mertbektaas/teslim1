@@ -59,8 +59,8 @@ class SyntheticDataset(Dataset):
                 # Confidence'i 1 yap
                 label_matrix[i, j, 4] = 1
                 # Koordinatları yaz
-                kutu_koordinatinates = torch.tensor([x_cell, y_cell, width, height])
-                label_matrix[i, j, 0:4] = kutu_koordinatinates
+                kutu_koordinatlari = torch.tensor([x_cell, y_cell, width, height])
+                label_matrix[i, j, 0:4] = kutu_koordinatlari
                 # Sınıf bilgisini one-hot olarak yaz
                 label_matrix[i, j, 5 + sinif_label] = 1
                 
